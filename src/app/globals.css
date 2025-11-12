@@ -1,74 +1,89 @@
+@import "tailwindcss";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* -------- Tema global escuro -------- */
-:root {
-  --color-bg: #0f172a;
-  --color-surface: #1e293b;
-  --color-text: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-primary: #3b82f6;
-  --color-accent: #facc15;
+@layer base {
+  :root {
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-surface-hover: #334155;
+    --color-primary: #3b82f6;
+    --color-primary-light: #60a5fa;
+    --color-accent: #facc15;
+    --color-accent-light: #fde047;
+    --color-text: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-border: #334155;
+    --color-card: #1e293b;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Inter", sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 👇 Impede que ícones fiquem gigantes por padrão */
+  svg {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    overflow: visible;
+  }
+
+  /* Opcional: reset em links com ícones */
+  a svg {
+    flex-shrink: 0;
+  }
 }
 
-/* -------- Reset -------- */
-html,
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: "Inter", sans-serif;
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
+/* Animação do gradiente no título */
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
 }
 
-/* -------- Tipografia -------- */
-h1,
-h2,
-h3,
-h4 {
-  color: var(--color-text);
-  font-weight: 600;
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
-p {
-  color: var(--color-text-secondary);
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
 }
 
-/* -------- Botões e elementos -------- */
-button {
-  cursor: pointer;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s ease;
+/* Estilos adicionais para o header */
+.header-link {
+  position: relative;
+  padding-bottom: 4px;
 }
 
-.card {
-  background-color: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+.header-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  transition: width 0.3s ease;
 }
 
-input,
-select,
-textarea {
-  background-color: #0f172a;
-  border: 1px solid #334155;
-  color: var(--color-text);
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--color-primary);
-  outline: none;
-}
-
-.modal-bg {
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+.header-link:hover::after {
+  width: 100%;
 }

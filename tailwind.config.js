@@ -6,7 +6,11 @@ module.exports = {
     "./pages/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "gradient-blue": "linear-gradient(to right, #2563eb, #06b6d4)",
+      },
+    },
   },
   plugins: [],
 };
