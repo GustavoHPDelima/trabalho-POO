@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const filePath = path.join(process.cwd(), "public/data/livros.json");
+const filePath = path.join(process.cwd(), "public/data/emprestimos.json");
 
 export async function GET() {
   const data = fs.readFileSync(filePath, "utf-8");
@@ -10,9 +10,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const novoLivro = await request.json();
+  const novoEmprestimo = await request.json();
   const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-  data.push(novoLivro);
+  data.push(novoEmprestimo);
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   return NextResponse.json({ sucesso: true });
 }

@@ -1,14 +1,18 @@
 [
   {
-    "titulo": "Clean Code",
-    "autor": "Robert C. Martin",
-    "isbn": "9780132350884",
-    "quantidade": 4
+    "id": 1762971577984,
+    "titulo": "Novo livro",
+    "autor": "autor do livro",
+    "isbn": "978-1-14802-93223",
+    "quantidade": 5,
+    "disponivel": 5
   },
   {
-    "titulo": "Domain-Driven Design",
-    "autor": "Eric Evans",
-    "isbn": "9780321125217",
-    "quantidade": 2
+    "id": 1762971577984,
+    "titulo": "Novo livro",
+    "autor": "autor do livro",
+    "isbn": "978-1-14802-93223",
+    "quantidade": 5,
+    "disponivel": 4
   }
 ]

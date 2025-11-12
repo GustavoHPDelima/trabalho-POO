@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 type Livro = {
   id: number;
@@ -11,112 +10,222 @@ type Livro = {
   disponivel: number;
 };
 
-export default function LivrosPage() {
+type Usuario = {
+  id: number;
+  nome: string;
+  tipo: string;
+};
+
+export default function LivrosDisponiveis() {
   const [livros, setLivros] = useState<Livro[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [novoLivro, setNovoLivro] = useState<Omit<Livro, "id">>({
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [showCadastroModal, setShowCadastroModal] = useState(false);
+  const [showEmprestimoModal, setShowEmprestimoModal] = useState(false);
+  const [livroSelecionado, setLivroSelecionado] = useState<Livro | null>(null);
+  const [novoLivro, setNovoLivro] = useState<{
+    titulo: string;
+    autor: string;
+    isbn: string;
+    quantidade?: number;
+  }>({
     titulo: "",
     autor: "",
     isbn: "",
-    quantidade: 0,
-    disponivel: 0,
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/livros")
-      .then((r) => r.json())
-      .then((d) => setLivros(d.livros || []))
-      .catch((err) => console.error(err));
-  }, []);
+    async function carregarDados() {
+      try {
+        const [livrosRes, usuariosRes] = await Promise.all([
+          fetch("/api/livros"),
+          fetch("/data/usuarios.json"),
+        ]);
 
-  function handleAddLivro() {
-    if (!novoLivro.titulo || !novoLivro.autor || !novoLivro.isbn) {
-      alert("Preencha todos os campos!");
-      return;
+        if (!livrosRes.ok) throw new Error("Falha ao buscar livros");
+        if (!usuariosRes.ok) throw new Error("Falha ao buscar usuários");
+
+        const livrosData = await livrosRes.json();
+        const usuariosData = await usuariosRes.json();
+
+        setLivros(Array.isArray(livrosData) ? livrosData : []);
+        setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
+        setError(null);
+      } catch (err: any) {
+        console.error("Erro carregarDados:", err);
+        setError(err?.message || "Erro desconhecido ao carregar dados");
+        setLivros([]);
+      }
     }
 
-    const livroComId = { ...novoLivro, id: Date.now() };
-    setLivros((prev) => [...prev, livroComId]);
-    setShowModal(false);
+    carregarDados();
+  }, []);
+
+  function gerarISBN() {
+    const randomPart = () =>
+      Math.floor(10000 + Math.random() * 90000).toString();
+    return `978-1-${randomPart()}-${randomPart()}`;
+  }
+
+  function abrirModalCadastro() {
     setNovoLivro({
       titulo: "",
       autor: "",
-      isbn: "",
-      quantidade: 0,
-      disponivel: 0,
+      isbn: gerarISBN(),
+      quantidade: undefined,
     });
+    setShowCadastroModal(true);
   }
 
+  async function handleAddLivro() {
+    if (
+      !novoLivro.titulo?.trim() ||
+      !novoLivro.autor?.trim() ||
+      !novoLivro.quantidade ||
+      novoLivro.quantidade <= 0
+    ) {
+      alert("Preencha todos os campos corretamente!");
+      return;
+    }
+
+    const livroComId: Livro = {
+      id: Date.now(),
+      titulo: novoLivro.titulo,
+      autor: novoLivro.autor,
+      isbn: novoLivro.isbn,
+      quantidade: novoLivro.quantidade,
+      disponivel: novoLivro.quantidade,
+    };
+
+    try {
+      const res = await fetch("/api/livros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(livroComId),
+      });
+      if (!res.ok) throw new Error("Falha ao salvar livro");
+      setLivros((prev) => [...prev, livroComId]);
+      setShowCadastroModal(false);
+    } catch (err) {
+      console.error("Erro salvando livro:", err);
+      alert("Erro ao salvar livro. Verifique o console.");
+    }
+  }
+
+  function abrirModalEmprestimo(e: React.MouseEvent, livro: Livro) {
+    e.stopPropagation();
+    setLivroSelecionado(livro);
+    setShowEmprestimoModal(true);
+  }
+
+  async function confirmarEmprestimo() {
+    if (!livroSelecionado) return;
+
+    if (livroSelecionado.disponivel <= 0) {
+      alert("Esse livro não está disponível no momento!");
+      return;
+    }
+
+    const usuarioAtual = usuarios[0] ?? {
+      id: 0,
+      nome: "Usuário Exemplo",
+      tipo: "Aluno",
+    };
+
+    const livrosAtualizados = livros.map((l) =>
+      l.id === livroSelecionado.id ? { ...l, disponivel: l.disponivel - 1 } : l
+    );
+    setLivros(livrosAtualizados);
+
+    try {
+      await fetch("/api/livros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          livrosAtualizados.find((l) => l.id === livroSelecionado.id)
+        ),
+      });
+
+      const novoEmprestimo = {
+        usuario: usuarioAtual.nome,
+        livro: livroSelecionado.titulo,
+        status: "ativo",
+      };
+
+      await fetch("/api/emprestimos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(novoEmprestimo),
+      });
+
+      alert("Empréstimo registrado com sucesso!");
+      setShowEmprestimoModal(false);
+    } catch (err) {
+      console.error("Erro confirmarEmprestimo:", err);
+      alert("Erro ao registrar empréstimo. Verifique o console.");
+    }
+  }
+
+  const hoje = new Date();
+  const devolucaoPrevista = new Date();
+  devolucaoPrevista.setDate(hoje.getDate() + 7);
+  const multaDiaria = 1.5;
+
   return (
-    <main className="p-8">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          📚 Gerenciamento de Livros
-        </h1>
-        <button className="px-4 py-2 rounded-lg bg-[var(--color-primary)] hover:bg-blue-700 text-white">
-          Adicionar
+    <div className="space-y-8 p-8 text-white">
+      <header
+        className="flex justify-between items-center"
+        style={{ zIndex: 50 }}
+      >
+        <h1 className="text-3xl font-bold">Livros Disponíveis</h1>
+        <button
+          type="button"
+          onClick={abrirModalCadastro}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white shadow"
+          style={{ zIndex: 60 }}
+        >
+          + Adicionar Livro
         </button>
       </header>
 
-      {livros.length === 0 ? (
-        <p className="text-gray-500">Nenhum livro cadastrado ainda.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="py-2 px-4 text-left">Título</th>
-                <th className="py-2 px-4 text-left">Autor</th>
-                <th className="py-2 px-4 text-left">ISBN</th>
-                <th className="py-2 px-4 text-center">Qtd Total</th>
-                <th className="py-2 px-4 text-center">Disponíveis</th>
-                <th className="py-2 px-4 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {livros.map((l) => (
-                <tr key={l.id} className="border-t hover:bg-gray-50 transition">
-                  <td className="py-2 px-4">{l.titulo}</td>
-                  <td className="py-2 px-4">{l.autor}</td>
-                  <td className="py-2 px-4">{l.isbn}</td>
-                  <td className="py-2 px-4 text-center">{l.quantidade}</td>
-                  <td className="py-2 px-4 text-center">
-                    {l.disponivel > 0 ? (
-                      <span className="text-green-600 font-semibold">
-                        {l.disponivel}
-                      </span>
-                    ) : (
-                      <span className="text-red-500 font-semibold">
-                        Indisponível
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 px-4 text-center space-x-2">
-                    <button className="text-blue-600 hover:underline">
-                      Editar
-                    </button>
-                    <button className="text-red-600 hover:underline">
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {error && <div className="text-yellow-300">Aviso: {error}</div>}
 
-      {/* Modal de Cadastro */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Novo Livro</h2>
+      <div className="grid md:grid-cols-3 gap-6">
+        {livros.map((livro) => (
+          <div
+            key={livro.id}
+            onClick={(e) => abrirModalEmprestimo(e, livro)}
+            className="cursor-pointer bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg hover:scale-[1.03] hover:border-blue-500 transition"
+          >
+            <h3 className="text-xl font-semibold mb-2">{livro.titulo}</h3>
+            <p className="text-slate-300">{livro.autor}</p>
+            <p className="text-slate-400">Código: {livro.isbn}</p>
+            <div className="mt-4 flex justify-between text-sm">
+              <span>Total: {livro.quantidade}</span>
+              <span
+                className={`font-semibold ${livro.disponivel > 0 ? "text-green-400" : "text-red-400"}`}
+              >
+                {livro.disponivel > 0
+                  ? `${livro.disponivel} disponíveis`
+                  : "Indisponível"}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showCadastroModal && (
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+          <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-96 shadow-xl">
+            <h2 className="text-xl font-semibold mb-4 text-center">
+              Novo Livro
+            </h2>
 
             <div className="space-y-3">
               <input
                 type="text"
-                placeholder="Título"
-                className="w-full border p-2 rounded"
+                placeholder="Digite o título do livro"
+                className="w-full p-2 rounded bg-slate-800 border border-slate-600 text-white placeholder-slate-400"
                 value={novoLivro.titulo}
                 onChange={(e) =>
                   setNovoLivro({ ...novoLivro, titulo: e.target.value })
@@ -124,8 +233,8 @@ export default function LivrosPage() {
               />
               <input
                 type="text"
-                placeholder="Autor"
-                className="w-full border p-2 rounded"
+                placeholder="Informe o autor do livro"
+                className="w-full p-2 rounded bg-slate-800 border border-slate-600 text-white placeholder-slate-400"
                 value={novoLivro.autor}
                 onChange={(e) =>
                   setNovoLivro({ ...novoLivro, autor: e.target.value })
@@ -133,23 +242,21 @@ export default function LivrosPage() {
               />
               <input
                 type="text"
-                placeholder="ISBN"
-                className="w-full border p-2 rounded"
+                readOnly
+                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white cursor-not-allowed"
                 value={novoLivro.isbn}
-                onChange={(e) =>
-                  setNovoLivro({ ...novoLivro, isbn: e.target.value })
-                }
               />
               <input
                 type="number"
-                placeholder="Quantidade"
-                className="w-full border p-2 rounded"
-                value={novoLivro.quantidade}
+                placeholder="Quantidade de exemplares disponíveis"
+                className="w-full p-2 rounded bg-slate-800 border border-slate-600 text-white placeholder-slate-400"
+                value={novoLivro.quantidade ?? ""}
                 onChange={(e) =>
                   setNovoLivro({
                     ...novoLivro,
-                    quantidade: Number(e.target.value),
-                    disponivel: Number(e.target.value),
+                    quantidade: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
                   })
                 }
               />
@@ -157,14 +264,14 @@ export default function LivrosPage() {
 
             <div className="mt-6 flex justify-end space-x-3">
               <button
-                onClick={() => setShowModal(false)}
-                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                onClick={() => setShowCadastroModal(false)}
+                className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddLivro}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-3 py-2 bg-blue-600 rounded hover:bg-blue-700"
               >
                 Salvar
               </button>
@@ -172,6 +279,54 @@ export default function LivrosPage() {
           </div>
         </div>
       )}
-    </main>
+
+      {showEmprestimoModal && livroSelecionado && (
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+          <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-[400px] shadow-2xl">
+            <h2 className="text-2xl font-semibold mb-4 text-center">
+              Empréstimo de Livro
+            </h2>
+            <div className="space-y-2 text-slate-300">
+              <p>
+                <strong>Título:</strong> {livroSelecionado.titulo}
+              </p>
+              <p>
+                <strong>Autor:</strong> {livroSelecionado.autor}
+              </p>
+              <p>
+                <strong>Disponíveis:</strong> {livroSelecionado.disponivel}
+              </p>
+              <hr className="border-slate-700 my-2" />
+              <p>
+                <strong>Data do Empréstimo:</strong>{" "}
+                {hoje.toLocaleDateString("pt-BR")}
+              </p>
+              <p>
+                <strong>Devolução Prevista:</strong>{" "}
+                {devolucaoPrevista.toLocaleDateString("pt-BR")}
+              </p>
+              <p>
+                <strong>Multa diária:</strong> R$ {multaDiaria.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowEmprestimoModal(false)}
+                className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEmprestimo}
+                className="px-3 py-2 bg-green-600 rounded hover:bg-green-700"
+              >
+                Confirmar Empréstimo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
