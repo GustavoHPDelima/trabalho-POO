@@ -40,4 +40,51 @@ export class Biblioteca {
   }
 
   // métodos de domínio: adicionarLivro, registrarEmprestimo, devolver, etc.
+  adicionarLivros(_titulo: string, _autor: string, _isbn: string, qtd: number) {
+    if (!_titulo || _titulo.trim().length === 0) {
+      throw new Error("O título do livro não pode estar vazio.");
+    }
+
+    if (!_autor || _autor.trim().length === 0) {
+      throw new Error("O autor do livro não pode estar vazio.");
+    }
+
+    if (!_isbn || _isbn.trim().length === 0 && _isbn.trim().length < 10) {
+      throw new Error("O ISBN do livro não pode estar vazio.");
+    }
+
+    if (qtd <= 0) {
+      throw new Error("A quantidade de livros deve ser maior que zero.");
+    }
+
+    const novoLivro = new Livro(_titulo, _autor, _isbn, qtd);
+    
+    this.livros.push(novoLivro);
+  }
+
+  registrarEmprestimo(_usuarioId: number, _livroIsbn: string, _dataEmprestimo: string, _dataPrevistaDevolucao: string) {
+    if(!_usuarioId || _usuarioId <= 0) {
+      throw new Error("O ID do usuário é inválido.");
+    }
+
+    if(!_livroIsbn || _livroIsbn.trim().length === 0 && _livroIsbn.trim().length < 10) {
+      throw new Error("O ISBN do livro não pode estar vazio.");
+    }
+    
+    if(!_dataEmprestimo || isNaN(new Date(_dataEmprestimo).getTime())) {
+      throw new Error("A data de empréstimo é inválida.");
+    } 
+
+    if(!_dataPrevistaDevolucao || isNaN(new Date(_dataPrevistaDevolucao).getTime())) {
+      throw new Error("A data prevista de devolução é inválida.");  
+    }
+
+    const novoEmprestimo = new Emprestimo(
+      (this.emprestimos.length + 1).toString(),
+      _livroIsbn,
+      _usuarioId,
+      _dataEmprestimo,
+      _dataPrevistaDevolucao
+    );
+  }
 }
