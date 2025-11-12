@@ -1,0 +1,14 @@
+[
+  {
+    "titulo": "Clean Code",
+    "autor": "Robert C. Martin",
+    "isbn": "9780132350884",
+    "quantidade": 4
+  },
+  {
+    "titulo": "Domain-Driven Design",
+    "autor": "Eric Evans",
+    "isbn": "9780321125217",
+    "quantidade": 2
+  }
+]
