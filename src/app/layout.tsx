@@ -43,7 +43,7 @@ export default function RootLayout({
             </Link>
 
             <nav className="hidden md:flex space-x-8">
-              {["Livros", "Empréstimos", "Usuários"].map((item) => (
+              {["Livros", "Emprestimos", "Usuarios"].map((item) => (
                 <Link
                   key={item}
                   href={`/${item.toLowerCase()}`}

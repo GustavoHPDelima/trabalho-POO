@@ -60,7 +60,7 @@ export default function Dashboard() {
 
       <div className="grid md:grid-cols-2 gap-6">
         <Table
-          title="📚 Livros Recentes"
+          title="Livros Recentes"
           headers={["Título", "Autor", "Disponível"]}
           rows={livros
             .slice(0, 5)
@@ -68,7 +68,7 @@ export default function Dashboard() {
         />
 
         <Table
-          title="👥 Últimos Usuários"
+          title="Últimos Usuários"
           headers={["Nome", "Tipo"]}
           rows={usuarios.slice(0, 5).map((u) => [u.nome, u.tipo])}
         />
