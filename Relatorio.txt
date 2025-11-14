@@ -1,0 +1,28 @@
+Desenvolvimento de um Sistema de Gerenciamento de Biblioteca
+
+Autores: Felipe Bordin, Gustavo Pasqualin
+Disciplina: POO
+
+Resumo e objetivos
+-----------------
+O objetivo foi implementar um mini-sistema de biblioteca com persistência em JSON, cobrindo cadastro de livros/usuários, registro de empréstimos e devoluções com cálculo de multa. O sistema foi modelado com classes que espelham as entidades reais: Livro, Usuario (abstrata), Emprestimo e Biblioteca (serviço/coordenador).
+
+Desafios encontrados
+--------------------
+1. **Validações e coerência dos dados** — assegurar que ISBNs, datas e quantidades sejam válidos (ex.: aceitar somente ISBN com tamanho mínimo, checar parse de datas). Erros sutis em validações (uso de `&&` em vez de `||`) causavam validações passivas; corrigi isso tornando as checagens explícitas e usando `isNaN(new Date(...).getTime())`.
+2. **Concorrência lógica** — mesmo em ambiente simples (JSON local), precisei garantir que ao registrar um empréstimo o estoque do livro fosse decrementado e, na devolução, incrementado. Também tratei a lógica de reutilizar um livro já cadastrado (incrementar quantidade) em vez de duplicar registros.
+3. **Regras de negócio por tipo de usuário** — implementar limites e prazos diferentes (Aluno x Professor). A decisão foi usar herança para encapsular essas diferenças.
+4. **Testabilidade** — criar testes que limparam o diretório de dados e validaram cenários de sucesso e erro (ex.: limite de empréstimos, cálculo de multa, atualização de estoque).
+5. **Separação de responsabilidades** — manter a persistência em `Biblioteca` (carregar/salvar JSON) e as regras do domínio em métodos específicos para facilitar testes unitários.
+
+Aplicação dos princípios de POO
+-------------------------------
+- **Encapsulamento:** cada classe (Livro, Usuario, Emprestimo) encapsula atributos e comportamentos que lhe pertencem (ex.: `Livro.emprestar()` decrementa estoque e lança erro se indisponível).
+- **Abstração:** a classe abstrata `Usuario` define a interface mínima (`podeEmprestar`) e os campos comuns (nome, id, limite, prazo), sem expor detalhes de implementação dos tipos específicos.
+- **Herança / Reutilização:** `AlunoGraduacao` e `Professor` estendem `Usuario` para reaproveitar atributos e comportamento padrão, sobrescrevendo regras quando necessário (ex.: `Professor.podeEmprestar`).
+- **Polimorfismo:** a `Biblioteca` chama `usuario.podeEmprestar(...)` sem precisar saber se o usuário é aluno ou professor — o comportamento correto é resolvido em tempo de execução pela classe concreta (polimorfismo de subtipo).
+- **Coesão e baixo acoplamento:** `Biblioteca` coordena operações entre entidades (consulta estoque, cria `Emprestimo`), mas as regras de estado de cada entidade residem na própria classe (ex.: `Livro` sabe como se emprestar/devolver).
+
+Conclusão
+--------
+A implementação demonstra a utilização prática de conceitos de POO para modelar regras de domínio de uma biblioteca. Os testes unitários cobrem cenários essenciais (criação, empréstimo, devolução e cálculo de multa) e os ajustes de validação reduziram inconsistências. Futuras melhorias: camada de persistência mais robusta (BD), interface web e notificações automáticas.

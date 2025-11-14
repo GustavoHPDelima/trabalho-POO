@@ -64,7 +64,7 @@ export class Biblioteca {
 
   
 
-  registrarEmprestimo(_usuarioId: number, _livroIsbn: string, _dataEmprestimo: string, _dataPrevistaDevolucao: string) {
+  registrarEmprestimo(_usuarioId: number, _livroIsbn: string, _dataEmprestimo: string, _dataPrevistaDevolucao?: string) {
     if(!_usuarioId || _usuarioId <= 0) {
       throw new Error("O ID do usuário é inválido.");
     }
@@ -77,8 +77,30 @@ export class Biblioteca {
       throw new Error("A data de empréstimo é inválida.");
     } 
 
-    if(!_dataPrevistaDevolucao || isNaN(new Date(_dataPrevistaDevolucao).getTime())) {
-      throw new Error("A data prevista de devolução é inválida.");  
+    // encontra usuário e livro
+    const usuario = this.usuarios.find((u) => (u as any).id === _usuarioId) as any;
+    if (!usuario) throw new Error("Usuário não encontrado.");
+
+    const livro = this.livros.find((l) => (l as any).isbn === _livroIsbn) as any;
+    if (!livro) throw new Error("Livro não encontrado.");
+    if (typeof livro.quantidade === "number" && livro.quantidade <= 0) {
+      throw new Error("Livro sem estoque.");
+    }
+
+    // checa limite de empréstimos via usuário
+    const ativosDoUsuario = this.emprestimos.filter(
+      (e) => e.usuarioId === _usuarioId && e.status === "ativo"
+    ).length;
+    if (!usuario.podeEmprestar(ativosDoUsuario)) {
+      throw new Error("Usuário atingiu o limite de empréstimos.");
+    }
+
+    // calcula data prevista se não informada, usando o prazo do usuário
+    let prevista = _dataPrevistaDevolucao;
+    if (!prevista) {
+      const d = new Date(_dataEmprestimo);
+      d.setDate(d.getDate() + (usuario.prazoEmprestimoDias || 0));
+      prevista = d.toISOString();
     }
 
     const novoEmprestimo = new Emprestimo(
@@ -86,9 +108,15 @@ export class Biblioteca {
       _livroIsbn,
       _usuarioId,
       _dataEmprestimo,
-      _dataPrevistaDevolucao
+      prevista
     );
+
+    // decrementa estoque quando registra
+    if (typeof livro.quantidade === "number") livro.quantidade--;
+
     this.emprestimos.push(novoEmprestimo);
+    this.salvarDados();
+    return novoEmprestimo;
   }
 
   devolverLivro(_emprestimoId: string, _dataDevolucao: string) {
