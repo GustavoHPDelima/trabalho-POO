@@ -28,7 +28,7 @@ export default function UsuariosAdmin() {
     const novosUsuarios = [...usuarios, novo];
     setUsuarios(novosUsuarios);
 
-    await fetch("/api/usuario", {
+    await fetch("/api/usuarios", {
       method: "POST",
       body: JSON.stringify(novo),
     });

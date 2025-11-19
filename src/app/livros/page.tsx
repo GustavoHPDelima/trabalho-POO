@@ -11,10 +11,36 @@ type Livro = {
 };
 
 type Usuario = {
-  id: number;
+  id?: number;
   nome: string;
   tipo: string;
 };
+
+function normalizarLivros(lista: any[]): Livro[] {
+  const deduplicados = new Map<number, Livro>();
+
+  lista.forEach((item) => {
+    const quantidade = Number(item?.quantidade ?? 0);
+    const disponivel =
+      typeof item?.disponivel === "number" ? item.disponivel : quantidade;
+
+    const id =
+      typeof item?.id === "number"
+        ? item.id
+        : Date.now() + Math.floor(Math.random() * 1000);
+
+    deduplicados.set(id, {
+      id,
+      titulo: item?.titulo ?? "Livro sem título",
+      autor: item?.autor ?? "Autor desconhecido",
+      isbn: item?.isbn ?? "Sem ISBN",
+      quantidade,
+      disponivel: Math.max(0, disponivel),
+    });
+  });
+
+  return Array.from(deduplicados.values());
+}
 
 export default function LivrosDisponiveis() {
   const [livros, setLivros] = useState<Livro[]>([]);
@@ -48,7 +74,9 @@ export default function LivrosDisponiveis() {
         const livrosData = await livrosRes.json();
         const usuariosData = await usuariosRes.json();
 
-        setLivros(Array.isArray(livrosData) ? livrosData : []);
+        setLivros(
+          Array.isArray(livrosData) ? normalizarLivros(livrosData) : []
+        );
         setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
         setError(null);
       } catch (err: any) {
@@ -133,7 +161,9 @@ export default function LivrosDisponiveis() {
     };
 
     const livrosAtualizados = livros.map((l) =>
-      l.id === livroSelecionado.id ? { ...l, disponivel: l.disponivel - 1 } : l
+      l.id === livroSelecionado.id
+        ? { ...l, disponivel: Math.max(0, l.disponivel - 1) }
+        : l
     );
     setLivros(livrosAtualizados);
 
@@ -146,10 +176,20 @@ export default function LivrosDisponiveis() {
         ),
       });
 
+      const agora = new Date();
+      const devolucaoPrevistaData = new Date();
+      devolucaoPrevistaData.setDate(agora.getDate() + 7);
+
+      const novoEmprestimoId = `emp-${Date.now()}`;
       const novoEmprestimo = {
+        id: novoEmprestimoId,
         usuario: usuarioAtual.nome,
+        usuarioId: usuarioAtual.id,
         livro: livroSelecionado.titulo,
+        livroId: livroSelecionado.id,
         status: "ativo",
+        dataEmprestimo: agora.toISOString(),
+        devolucaoPrevista: devolucaoPrevistaData.toISOString(),
       };
 
       await fetch("/api/emprestimos", {

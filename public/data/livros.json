@@ -1,18 +1,26 @@
 [
   {
-    "id": 1762971577984,
-    "titulo": "Novo livro",
-    "autor": "autor do livro",
-    "isbn": "978-1-14802-93223",
-    "quantidade": 5,
-    "disponivel": 5
+    "id": 101,
+    "titulo": "Estruturas de Dados Modernas",
+    "autor": "N. Wirth",
+    "isbn": "978-1-40283-101-6",
+    "quantidade": 8,
+    "disponivel": 6
   },
   {
-    "id": 1762971577984,
-    "titulo": "Novo livro",
-    "autor": "autor do livro",
-    "isbn": "978-1-14802-93223",
+    "id": 102,
+    "titulo": "Arquitetura de Sistemas Distribuídos",
+    "autor": "L. Kleinrock",
+    "isbn": "978-1-40283-102-3",
     "quantidade": 5,
-    "disponivel": 4
+    "disponivel": 2
+  },
+  {
+    "id": 103,
+    "titulo": "Introdução ao Machine Learning",
+    "autor": "A. Ng",
+    "isbn": "978-1-40283-103-0",
+    "quantidade": 10,
+    "disponivel": 10
   }
 ]

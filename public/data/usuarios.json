@@ -1,6 +1,17 @@
 [
   {
+    "id": 1,
     "nome": "Felipe Bordin",
     "tipo": "Estudante"
+  },
+  {
+    "id": 2,
+    "nome": "Marina Costa",
+    "tipo": "Professor"
+  },
+  {
+    "id": 3,
+    "nome": "Carlos Nunes",
+    "tipo": "Bibliotecário"
   }
 ]
